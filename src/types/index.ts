@@ -59,3 +59,10 @@ export interface User {
   name: string;
   email: string;
 }
+
+export interface PaymentResponse {
+  success: boolean;
+  transactionId: string;
+  amount: number;
+  timestamp: string;
+}

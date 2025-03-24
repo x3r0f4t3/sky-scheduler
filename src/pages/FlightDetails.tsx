@@ -70,7 +70,7 @@ const FlightDetails: React.FC = () => {
     
     if (!flight) return;
     
-    // Navigate to payment page with flight details
+    // Navigate directly to payment page with flight details
     const bookingData = {
       flightId: flight.id,
       airline: flight.airline.name,
@@ -115,18 +115,18 @@ const FlightDetails: React.FC = () => {
   }
   
   // Format departure and arrival times
-  const departureTime = format(parseISO(flight.departure.scheduled), 'h:mm a');
-  const arrivalTime = format(parseISO(flight.arrival.scheduled), 'h:mm a');
+  const departureTime = flight ? format(parseISO(flight.departure.scheduled), 'h:mm a') : '';
+  const arrivalTime = flight ? format(parseISO(flight.arrival.scheduled), 'h:mm a') : '';
   
   // Format departure and arrival dates
-  const departureDate = format(parseISO(flight.departure.scheduled), 'EEEE, MMMM d, yyyy');
-  const arrivalDate = format(parseISO(flight.arrival.scheduled), 'EEEE, MMMM d, yyyy');
+  const departureDate = flight ? format(parseISO(flight.departure.scheduled), 'EEEE, MMMM d, yyyy') : '';
+  const arrivalDate = flight ? format(parseISO(flight.arrival.scheduled), 'EEEE, MMMM d, yyyy') : '';
   
   // Calculate cancellation fee (20% of the ticket price)
-  const cancellationFee = (flight.price * 0.2).toFixed(2);
+  const cancellationFee = flight ? (flight.price * 0.2).toFixed(2) : '0';
   
   // Calculate total price
-  const totalPrice = (flight.price * selectedPassengers).toFixed(2);
+  const totalPrice = flight ? (flight.price * selectedPassengers).toFixed(2) : '0';
   
   return (
     <div className="min-h-screen pt-24 pb-20 bg-muted/30">

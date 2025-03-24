@@ -1,30 +1,96 @@
 
 import { Flight, SearchParams } from '../types';
 
-// This would be stored in .env in a real app
+// Get API key from environment variable
 const apiKey = import.meta.env.VITE_AVIATION_STACK_API_KEY;
 
 export const searchFlights = async (searchParams: SearchParams): Promise<Flight[]> => {
   try {
-    // In a real app, this would fetch from the Aviation Stack API
-    // For now, we'll simulate a delay and return mock data
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    // Check if API key is available
+    if (!apiKey) {
+      console.error('Aviation Stack API key is missing');
+      // Fall back to mock data if API key is not available
+      return generateMockFlights(searchParams);
+    }
     
-    // Generate mockup flights data
-    const mockFlights = generateMockFlights(searchParams);
-    return mockFlights;
+    // Build the API URL with parameters
+    const baseUrl = 'http://api.aviationstack.com/v1/flights';
+    const queryParams = new URLSearchParams({
+      access_key: apiKey,
+      dep_iata: searchParams.from.split('(')[1]?.split(')')[0] || searchParams.from,
+      arr_iata: searchParams.to.split('(')[1]?.split(')')[0] || searchParams.to,
+      flight_date: new Date(searchParams.departDate).toISOString().split('T')[0],
+      limit: '10'
+    });
+    
+    // Make API request
+    const response = await fetch(`${baseUrl}?${queryParams.toString()}`);
+    
+    if (!response.ok) {
+      throw new Error(`API request failed with status ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    // Transform API response to our Flight type
+    if (data.data && Array.isArray(data.data)) {
+      return data.data.map((flight: any, index: number) => {
+        // Calculate random price between $100 and $1000
+        const price = Math.floor(Math.random() * 900) + 100;
+        
+        // Calculate flight duration
+        const departure = new Date(flight.departure.scheduled || new Date());
+        const arrival = new Date(flight.arrival.scheduled || new Date());
+        const durationMs = arrival.getTime() - departure.getTime();
+        const durationHours = Math.floor(durationMs / (1000 * 60 * 60));
+        const durationMinutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+        const duration = `${durationHours}h ${durationMinutes}m`;
+        
+        return {
+          id: `FLIGHT-${flight.flight.iata || index + 1}`,
+          airline: {
+            name: flight.airline.name || 'Unknown Airline',
+            logo: flight.airline.name ? `${flight.airline.name.toLowerCase().replace(/\s/g, '')}.png` : undefined
+          },
+          flight: {
+            number: flight.flight.number || `${index + 1000}`,
+            iata: flight.flight.iata || `XX${index + 1000}`
+          },
+          departure: {
+            airport: flight.departure.airport || searchParams.from,
+            terminal: flight.departure.terminal,
+            gate: flight.departure.gate,
+            scheduled: flight.departure.scheduled || new Date().toISOString(),
+            timezone: flight.departure.timezone || 'UTC'
+          },
+          arrival: {
+            airport: flight.arrival.airport || searchParams.to,
+            terminal: flight.arrival.terminal,
+            gate: flight.arrival.gate,
+            scheduled: flight.arrival.scheduled || new Date(new Date().getTime() + 3 * 60 * 60 * 1000).toISOString(),
+            timezone: flight.arrival.timezone || 'UTC'
+          },
+          price,
+          duration,
+          stops: flight.flight.number ? (parseInt(flight.flight.number) % 3) : 0 // Random number of stops (0-2)
+        };
+      });
+    }
+    
+    // If API response format is unexpected, fall back to mock data
+    console.error('Unexpected API response format, using mock data instead');
+    return generateMockFlights(searchParams);
   } catch (error) {
     console.error('Error fetching flights:', error);
-    throw error;
+    // Fall back to mock data in case of error
+    return generateMockFlights(searchParams);
   }
 };
 
 export const getFlightById = async (id: string): Promise<Flight | null> => {
   try {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
     // For demo purposes, find the flight in our mock data
+    // In a real app, you would make an API call to get flight details
     const allMockFlights = generateMockFlights({
       from: 'Any',
       to: 'Any',
